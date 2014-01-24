@@ -5,7 +5,8 @@
 *.war
 *.ear
 
-/target/
+### Unignore for "master_compiled" branch
+### /target/
 .idea/
 *.class
 *.iml
