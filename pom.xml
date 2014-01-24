@@ -1,22 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd"
-         xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<!--
+  JBoss, Home of Professional Open Source
+  Copyright Red Hat, Inc., and individual contributors
+
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+
+      http://www.apache.org/licenses/LICENSE-2.0
+
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+-->
+<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.jboss.aerogear.aerodoc</groupId>
   <artifactId>aerodoc</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
+  <version>0.10.0-SNAPSHOT</version>
   <packaging>war</packaging>
   <parent>
     <groupId>org.jboss.aerogear</groupId>
     <artifactId>aerogear-parent</artifactId>
     <version>0.1.0</version>
   </parent>
-  <repositories>
-    <repository>
-      <id>client</id>
-      <url>https://repository.jboss.org/nexus/content/repositories/jboss_releases_staging_profile-1416/</url>
-    </repository>
-  </repositories>
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -25,6 +34,13 @@
         <version>3.0.2.Final</version>
         <type>pom</type>
         <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.arquillian</groupId>
+        <artifactId>arquillian-bom</artifactId>
+        <version>1.1.1.Final</version>
+        <scope>import</scope>
+        <type>pom</type>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -39,6 +55,11 @@
       <artifactId>hibernate-annotations</artifactId>
       <version>3.5.6-Final</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate</groupId>
+      <artifactId>hibernate-search</artifactId>
+      <version>4.3.0.Final</version>
     </dependency>
     <dependency>
       <groupId>javax.validation</groupId>
@@ -92,15 +113,44 @@
       </exclusions>
     </dependency>
     <dependency>
-      <groupId>org.jboss.aerogear.unifiedpush</groupId>
-      <artifactId>unified-push-java-client</artifactId>
+      <groupId>org.jboss.aerogear</groupId>
+      <artifactId>unifiedpush-java-client</artifactId>
       <version>${aerogear.unifiedpush.sender.version}</version>
     </dependency>
-    <dependency>
+    <dependency> 
       <groupId>org.jboss.resteasy</groupId>
       <artifactId>resteasy-jaxrs</artifactId>
       <version>2.3.4.Final</version>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.8.1</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.junit</groupId>
+      <artifactId>arquillian-junit-container</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.arquillian.extension</groupId>
+      <artifactId>arquillian-persistence-impl</artifactId>
+      <version>1.0.0.Alpha6</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.jboss.shrinkwrap.resolver</groupId>
+      <artifactId>shrinkwrap-resolver-depchain</artifactId>
+      <scope>test</scope>
+      <type>pom</type>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>1.7.5</version>
+      <scope>test</scope>
     </dependency>
   </dependencies>
   <build>
@@ -137,14 +187,79 @@
           </archive>
         </configuration>
       </plugin>
-
+      <!-- we really do not need javadocs for the server, there are no Java APIs exposed -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
+  <profiles>
+  <profile>
+    <id>jbossas</id>
+    <activation>
+      <activeByDefault>true</activeByDefault>
+    </activation>
+    <dependencies>
+      <dependency>
+        <groupId>org.jboss.as</groupId>
+        <artifactId>jboss-as-arquillian-container-managed</artifactId>
+        <version>7.1.1.Final</version>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.jboss.arquillian.protocol</groupId>
+        <artifactId>arquillian-protocol-servlet</artifactId>
+        <scope>test</scope>
+      </dependency>
+    </dependencies>
+    <build>
+      <plugins>
+        <plugin>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.14.1</version>
+        </plugin>
+        <plugin>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>2.8</version>
+          <executions>
+            <execution>
+              <id>unpack</id>
+              <phase>process-test-classes</phase>
+              <goals>
+                <goal>unpack</goal>
+              </goals>
+              <configuration>
+                <artifactItems>
+                  <artifactItem>
+                    <groupId>org.jboss.as</groupId>
+                    <artifactId>jboss-as-dist</artifactId>
+                    <version>7.1.1.Final</version>
+                    <type>zip</type>
+                    <overWrite>false</overWrite>
+                    <outputDirectory>${project.build.directory}</outputDirectory>
+                  </artifactItem>
+                </artifactItems>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+      </plugins>
+    </build>
+  </profile>
+  </profiles>
+
   <properties>
     <aerogear.security.version>1.2.1</aerogear.security.version>
-    <aerogear.security.picketlink.version>1.2.2-SNAPSHOT</aerogear.security.picketlink.version>
+    <aerogear.security.picketlink.version>1.2.2</aerogear.security.picketlink.version>
     <aerogear.controller.version>1.0.1</aerogear.controller.version>
-    <aerogear.unifiedpush.sender.version>0.2.1</aerogear.unifiedpush.sender.version>
+    <aerogear.unifiedpush.sender.version>0.4.0</aerogear.unifiedpush.sender.version>
   </properties>
 </project>
